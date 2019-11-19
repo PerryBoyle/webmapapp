@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title> Ski Resorts in North America </title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <style>
+/* Style the tab */
+.tab {
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background-color: #b3b3b3;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  transition: 0.3s;
+  font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+  background-color: #0000ff;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+  background-color: #ffa500;
+}
+
+/* Style the tab content */
+.tabcontent {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ffa500;
+  border-top: none;
+}
+</style>    
+    </head>
+    
+    <body style="background-color:powderblue;">
+        <h1>Locations of Ski Areas in North America</h1>
+
+    
+<!--Set up Tabs-->
+<div class="tab">
+  <button class="tablinks" onclick="openPage(event, 'Map')">Map</button>
+  <button class="tablinks" onclick="openPage(event, 'Data')">Data Description</button>
+  <button class="tablinks" onclick="openPage(event, 'Help')">Help</button>
+
+<div id="Map" class="tabcontent">
+  <h3></h3>
+  <iframe height="850" width="1100" src="Map.html" frameBorder="0" ></iframe>
+</div>
+
+<div id="Data" class="tabcontent">
+  <h3></h3>
+  <iframe height="800" width="1000" src="Data.html" frameBorder="0" ></iframe>
+</div>
+
+<div id="Help" class="tabcontent">
+  <h3></h3>
+  <iframe height="800" width="1000" src="Help.html" frameBorder="0" ></iframe>
+</div>
+  
+
+<script>
+function openPage(evt, pagename) {
+  var i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(pagename).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+</script>
+
+</div>
+<footer>
+    <p>This website was created for a final project in WebGIS by Perry Boyle. </p>
+</footer>
+</body>
+
+</html>

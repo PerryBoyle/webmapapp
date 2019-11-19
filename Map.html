@@ -1,0 +1,355 @@
+<html>
+    <head>
+        <meta charset=utf-8 />
+        <title>Map View</title>
+        <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+        <!-- Load Leaflet from CDN -->
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.4.0/dist/leaflet.css"
+              integrity="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA=="
+              crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.4.0/dist/leaflet.js"
+                integrity="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg=="
+        crossorigin=""></script>
+
+
+        <!-- Load Esri Leaflet from CDN -->
+        <script src="https://unpkg.com/esri-leaflet@2.2.4/dist/esri-leaflet.js"
+                integrity="sha512-tyPum7h2h36X52O2gz+Pe8z/3l+Y9S1yEUscbVs5r5aEY5dFmP1WWRY/WLLElnFHa+k1JBQZSCDGwEAnm2IxAQ=="
+        crossorigin=""></script>
+
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+        <style>
+            body { margin:0; padding:0; }
+            #map{
+                height:700px;
+                width: 1000px; 
+            }
+        </style>
+    </head>
+    <body>
+        <br> </br>
+        <div id="map"></div>
+        <img src="Legend.PNG">
+        <fieldset>
+            <legend>Select a State</legend>
+            <select id='layerselect'></select>
+            <button onclick ="StateSki()">Submit</button>
+        </fieldset>
+        <p id = "NAME"></p>
+        <table>
+            <tbody>
+                <tr>
+                    <td><div id='piechart'></div></td>
+                    <td><div id ="barchart_values"></div></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <script>
+            //create leaflet map and add basemap + hosted feature layers from ArcGISonline
+            var map = L.map('map').setView([39, -94], 4);
+
+            //create a base map
+            var layer1 = L.esri.basemapLayer('Streets');
+            layer1.addTo(map);
+            //configure popup associated with click function
+            function onEachFeaturefunction(feature, layer) {
+                var popupContent = "State = " + feature.properties.STATE + "; " + " Name of Area = " + feature.properties.NAME + "; " + "Alpine/Cross-Country = " + feature.properties.TYPE;
+
+                layer.bindPopup(popupContent);
+            }
+
+            var icon1 = L.icon({
+                iconUrl: 'AlpineIconPNG.PNG',
+
+            });
+
+            var icon2 = L.icon({
+                iconUrl: 'CrossCountryIcon.PNG',
+
+            });
+
+            var icon3 = L.icon({
+                iconUrl: 'DualSportIcon.PNG',
+
+            });
+            //Add feature layer containing ski area location 
+            var layer2 = L.esri.featureLayer({
+                url: 'https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/SkiAreas/FeatureServer/0',
+                simplifyFactor: 0.5,
+                onEachFeature: onEachFeaturefunction,
+                pointToLayer: function (geojson, latlng) {
+                    if (geojson.properties.TYPE == "Alpine")
+                    {
+                        return L.marker(latlng, {
+                            icon: icon1
+                        });
+                    }
+                    if (geojson.properties.TYPE == "Cross-Country")
+                    {
+                        return L.marker(latlng, {
+                            icon: icon2
+                        });
+                    } else
+                    {
+                        return L.marker(latlng, {
+                            icon: icon3
+                        });
+                    }
+                }
+            });
+            layer2.addTo(map);
+
+            //add state feature layer
+            var layer3 = L.esri.featureLayer({
+                url: "https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/cb_2018_us_state_500k_Perry/FeatureServer/0",
+                simplifyFactor: 0.5,
+
+            });
+            layer3.addTo(map);
+            // create a layer control
+            var layers = {
+                "Resort Locations": layer2,
+                "State Boundaries": layer3
+            };
+            var layerControl = L.control.layers(layers);
+            layerControl.addTo(map);
+
+        </script>
+
+
+
+        <script>
+
+            google.charts.load('current', {'packages': ['corechart']});
+
+            var statename = [];
+
+            //query unique state names from the layer
+            var query = L.esri.query({
+                url: "https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/SkiAreas/FeatureServer/0"
+            });
+            query.where('LAT >0');
+
+            query.run(callbackquery2);
+
+            function callbackquery2(error, featureCollection, response)
+            {
+                //access the selected features 
+                var features = featureCollection.features;   //a list of geojson features
+                // crate a loop to go through every feature
+                for (var i = 0; i < features.length; i++)
+                {
+                    var feature = features[i];
+                    var state = feature.properties.STATE;
+                    console.log(state);
+                    if (statename.includes(state))
+                    {
+
+                    } else
+                    {
+                        statename.push(state);
+                    }
+                }
+
+                //use the state name to create options
+                var select = document.getElementById('layerselect');
+
+                for (var i = 0; i < statename.length; i++)
+                {
+                    var option = document.createElement("option");
+                    option.text = statename[i];
+                    option.value = statename[i];
+                    select.add(option);
+                }
+            }
+
+            function drawPieChart() {
+                var charttype = ['State', selectedStateFromClick, 'Other'];
+                var chartValue = ['Number', numFeatureFromClick, totalfeature - numFeatureFromClick];
+
+                //combine two lists to form a data list
+                var dataarray = [];
+                for (var i = 0; i < 3; i++)
+                {
+                    dataarray.push([charttype[i], chartValue[i]]);
+                }
+                //test dataarray values in console
+                console.log(dataarray);
+
+                var data = google.visualization.arrayToDataTable(dataarray);
+
+
+                // Options: add a title and set the width and height of the chart
+                var options = {title: selectedStateFromClick + ' vs other States', width: 300, height: 300};
+
+                // Display the chart inside the <div> element with id="piechart"
+                var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+                chart.draw(data, options);
+            }
+
+            var selectedStateFromClick = "";
+            var numFeatureFromClick = 0;
+            var totalfeature = 684;
+
+            function callbackquery3(error, featureCollection, response)
+            {
+                //access the selected features 
+
+                var features = featureCollection.features;
+                numFeatureFromClick = features.length;
+                google.charts.setOnLoadCallback(drawPieChart);
+
+                for (var i = 0; i < features.length; i++)
+                {
+                    var name = (features[i].properties.NAME);
+                    //format results
+                    queryresult = queryresult + name + ";  ";
+                    if (i % 3 == 0)
+                    {
+                        queryresult = queryresult + "<br>";
+                    }
+                }
+                document.getElementById("NAME").innerHTML = queryresult;
+            }
+
+            function StateSki() {
+                var selectState = document.getElementById('layerselect').value;
+                console.log(selectState);
+                var query2 = L.esri.query({
+                    url: "https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/SkiAreas/FeatureServer/0"
+                });
+                query2.where("STATE='" + selectState + "'");
+                queryresult = "";
+                query2.run(callbackquery3);
+            }
+
+//bar chart
+            //read csv file
+            function readTextFile(file)
+            {
+                var rawFile = new XMLHttpRequest();
+
+                var data;
+                rawFile.onreadystatechange = function ()
+                {
+                    if (rawFile.readyState === 4)
+                    {
+                        if (rawFile.status === 200 || rawFile.status == 0)
+                        {
+                            data = rawFile.responseText;
+
+                        }
+                    }
+                }
+
+                rawFile.open("GET", file, false);
+                rawFile.send(null);
+                return data;
+            }
+            var Types = readTextFile("SkiAreaType.csv");
+            var AreaType = [0, 0, 0];
+            function fliterData(selectedStateFromClick)
+            {
+                //split data in csv file and so it can be extracted
+                var rows = Types.split("\n");
+                console.log(rows);
+                for (var i = 1; i < rows.length; i++) //skips first line
+                {
+                    var splitdata = rows[i].split(",");
+                    var STATE = splitdata[0];
+                    var Type = splitdata[1];
+                    var Count = Number(splitdata[2]);
+                    if (STATE.trim() == selectedStateFromClick.toUpperCase().trim())
+                    {
+                        console.log("State");
+                        if (Type.trim() == "Both")
+                        {
+                            AreaType[0] = Count;
+                        }
+                        if (Type.trim() == "Alpine")
+                        {
+                            AreaType[1] = Count;
+                        }
+                        if (Type.trim() == "Cross-Country")
+                        {
+                            AreaType[2] = Count;
+                        }
+                    }
+
+                }
+                console.log(AreaType); //test area type values in console
+            }
+
+            function drawBarChart() {
+
+                var data = google.visualization.arrayToDataTable([
+                    ["Type", "# of Areas"],
+                    ["Both", AreaType[0]],
+                    ["Alpine", AreaType[1]],
+                    ["Cross-Country", AreaType[2]]
+                ]);
+
+                var options = {
+                    title: "Types of ski areas within " + selectedStateFromClick,
+                    width: 600,
+                    height: 300,
+                    bar: {groupWidth: "95%"}
+                };
+                var chart = new google.visualization.BarChart(document.getElementById("barchart_values"));
+                chart.draw(data, options);
+            }
+        </script>
+
+        <script>
+            //Select state query
+            //define map click event
+            map.on('click', mapfunction);
+
+            function mapfunction(ev)
+            {
+                var loc = ev.latlng;
+
+                //define the layer that the query is based on
+                var queryState = L.esri.query({
+                    url: "https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/cb_2018_us_state_500k_Perry/FeatureServer/0"
+                });
+
+                //define relationships
+                queryState.contains(loc);
+
+                //run(<Function> callback, <Object> context)
+                queryState.run(function (error, featureCollection, response) {
+                    console.log('Found ' + featureCollection.features.length + ' features');
+                    //write a loop to access every feature's attribute
+                    //every feature is a json feature..
+                    for (var i = 0; i < featureCollection.features.length; i++)
+                    {
+                        console.log((featureCollection.features[i].properties.NAME));
+                        alert(featureCollection.features[i].properties.NAME);
+
+                        selectedStateFromClick = featureCollection.features[i].properties.NAME;
+
+                        //call the function to perform filtering 
+                        fliterData(selectedStateFromClick);
+
+                        //call the funtion to draw chart
+                        google.charts.setOnLoadCallback(drawBarChart);
+                    }
+
+                    //Ski resort query based off of selectedState query
+                    var querySki = L.esri.query({
+                        url: "https://services1.arcgis.com/44C95LOqZjbh8Row/arcgis/rest/services/SkiAreas/FeatureServer/0"
+                    });
+                    querySki.where("STATE='" + selectedStateFromClick.toUpperCase() + "'");
+                    queryresult = "";
+                    querySki.run(callbackquery3);
+                });
+            }
+        </script>
+
+    </body>
+</html>
+
